@@ -1,33 +1,27 @@
 
 public class TableEntry {
 
-	private String ipAddress;
-	private int port;
+	private NetworkNode nextHop;
+	private NetworkNode destination;
 	private double cost;
-	public TableEntry(String ipAddress, int port, double cost) {
+	public TableEntry(NetworkNode nextHop, NetworkNode destination, double cost) {
 		super();
-		this.ipAddress = ipAddress;
-		this.port = port;
+		this.nextHop = nextHop;
+		this.destination = destination;
 		this.cost = cost;
 	}
 	
-	public TableEntry(String ipPortPair, double cost){
-		this.ipAddress = ipPortPair.split(":")[0];
-		this.port = Integer.valueOf(ipPortPair.split(":")[1]);
-		this.cost = cost;
-		
+	public NetworkNode getNextHop() {
+		return nextHop;
 	}
-	public String getIpAddress() {
-		return ipAddress;
+	public void setNextHop(NetworkNode nextHop) {
+		this.nextHop = nextHop;
 	}
-	public void setIpAddress(String ipAddress) {
-		this.ipAddress = ipAddress;
+	public NetworkNode getDestination() {
+		return destination;
 	}
-	public int getPort() {
-		return port;
-	}
-	public void setPort(int port) {
-		this.port = port;
+	public void setDestination(NetworkNode destination) {
+		this.destination = destination;
 	}
 	public double getCost() {
 		return cost;
@@ -35,6 +29,7 @@ public class TableEntry {
 	public void setCost(double cost) {
 		this.cost = cost;
 	}
+	
 	
 	
 	
