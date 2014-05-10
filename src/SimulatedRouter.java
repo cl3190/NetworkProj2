@@ -53,7 +53,8 @@ public class SimulatedRouter {
 
 	private Timer sendTableTimer = null;
 
-	private DateFormat df = new SimpleDateFormat("yyyy-MM-dd$hh:mm:ss");
+	/* length is 23 */
+	private DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
 	public SimulatedRouter(int port, long timeout, String transportFile,
 			int chuckNum, List<String> entryList) throws Exception {
@@ -262,6 +263,11 @@ public class SimulatedRouter {
 			System.out.println("Cannot send to yourself!");
 			return;
 		}
+		
+		if(TRANSFILE==""){
+			System.out.println("Configure file didnot specify a file to send.");
+			return;
+		}
 
 		for (int i = 0; i < neighbours.size(); i++) {
 			if (neighbours.get(i).getIpPortPair()
@@ -288,6 +294,11 @@ public class SimulatedRouter {
 			System.out.println("Cannot send to yourself!");
 			return;
 		}
+		
+		if(TRANSFILE==""){
+			System.out.println("Configure file didnot specify a file to send.");
+			return;
+		}
 
 		for (int i = 0; i < neighbours.size(); i++) {
 			if (neighbours.get(i).getIpPortPair()
@@ -312,7 +323,8 @@ public class SimulatedRouter {
 		 * total chuck count(how many chucks does this file has) 20-23: numbers
 		 * of hops, 24-44: 21 byte for destination, 45 byte on, every 21 byte
 		 * is: 111.111.111.111:12345 takes 21 bytes, if not as long as 21 byte,
-		 * filled up by "  ", after that, is the content of the file
+		 * filled up by "  ", after that comes 23 byte of send time,
+		 * yyyy-MM-dd'T'HH:mm:ss.SSS, after that, is the content of the file
 		 */
 
 		String targetIp = destination.getIpAddress();
@@ -362,6 +374,7 @@ public class SimulatedRouter {
 		outputStream.write(Util.intToByteArray(1));
 		outputStream.write(ipPortPair.getBytes());
 		outputStream.write(sendIpPort.getBytes());
+		outputStream.write((df.format(new Date()).getBytes()));
 		outputStream.write(fileContent);
 
 		// System.out.println(new String(fileContent));
@@ -519,7 +532,6 @@ public class SimulatedRouter {
 			// .println("==================" + ipPortPair + "   " + cost);
 
 			cost += routeTable.get(senderIpPortPair).getCost();
-			
 
 			if (routeTable.containsKey(ipPortPair)) {
 				double originCost = routeTable.get(ipPortPair).getCost();
@@ -594,7 +606,7 @@ public class SimulatedRouter {
 		}
 	}
 
-	private void linkdownMessageRespond() throws Exception{
+	private void linkdownMessageRespond() throws Exception {
 		String senderIp = dpIn.getAddress().getHostAddress();
 		int senderPort = dpIn.getPort();
 
@@ -636,7 +648,8 @@ public class SimulatedRouter {
 		 * total chuck count(how many chucks does this file has) 20-23: numbers
 		 * of hops, 24-44: 21 byte for destination, 45 byte on, every 21 byte
 		 * is: 111.111.111.111:12345 takes 21 bytes, if not as long as 21 byte,
-		 * filled up by "  ", after that, is the content of the file
+		 * filled up by "  ", after that comes 23 byte of send time,
+		 * yyyy-MM-dd'T'HH:mm:ss.SSS, after that, is the content of the file
 		 */
 
 		byte[] inArr = dpIn.getData();
@@ -653,20 +666,32 @@ public class SimulatedRouter {
 
 			int totalChuckCount = Util.byteArrayToInt(Arrays.copyOfRange(inArr,
 					16, 20));
+			
+			System.out.println("total Chunk count:"+totalChuckCount);
 			int chuckNum = Util.byteArrayToInt(Arrays
 					.copyOfRange(inArr, 12, 16));
 			int length = Util.byteArrayToInt(Arrays.copyOfRange(inArr, 8, 12));
+			
+			String time= new String(Arrays.copyOfRange(inArr, 24 + (hopCount + 1) * 21, 24
+					+23+ (hopCount + 1) * 21 ));
 
 			if (receiveTime == 0) {
 				receiveTable = new boolean[totalChuckCount];
+				for (int i=0;i<receiveTable.length;i++) {
+					receiveTable[i] = false;
+				}
+				fileReceiveList = new ArrayList<byte[]>();
+				for(int i=0;i<totalChuckCount;i++){
+					fileReceiveList.add(null);
+				}
 			}
 			receiveTime++;
 
 			receiveTable[chuckNum - 1] = true;
-			fileReceiveList.add(
-					chuckNum - 1,
-					Arrays.copyOfRange(inArr, 24 + (hopCount + 1) * 21, 24
-							+ (hopCount + 1) * 21 + length));
+			fileReceiveList.set(chuckNum - 1,
+					Arrays.copyOfRange(inArr, 24 +23+ (hopCount + 1) * 21, 24
+							+23+ (hopCount + 1) * 21 + length));
+
 
 			// System.out.println("&&&&&&");
 			// System.out.println(new String(Arrays.copyOfRange(inArr,
@@ -685,6 +710,9 @@ public class SimulatedRouter {
 						45 + i * 21, 45 + 21 + i * 21))).trim() + "  -> ");
 			}
 			System.out.println(THIS_IP + ":" + PORT);
+			
+			System.out.println("Send time:"+time);
+			System.out.println("Received time:"+df.format(new Date()));
 
 			if (allReceived) {
 				File file = new File("output");
@@ -702,6 +730,9 @@ public class SimulatedRouter {
 
 				System.out
 						.println("Chucks has been merged into file \"output\".");
+				receiveTable = null;
+				fileReceiveList = null;
+				receiveTime = 0;
 			}
 
 		} else {
@@ -728,9 +759,10 @@ public class SimulatedRouter {
 
 			byte[] p4 = thisIpPort.getBytes();
 			// System.out.println("p4:"+new String(p4)+"|");
+			byte[] p5 = (df.format(new Date()).getBytes());
 
-			byte[] p5 = Arrays.copyOfRange(inArr, 24 + (hopCount + 1) * 21, 24
-					+ (hopCount + 1) * 21 + fileLength);
+			byte[] p6 = Arrays.copyOfRange(inArr, 24 +23+ (hopCount + 1) * 21, 24
+					+23+ (hopCount + 1) * 21 + fileLength);
 
 			// System.out.println("p5:"+new String(p5)+"|");
 
@@ -740,6 +772,7 @@ public class SimulatedRouter {
 			outputStream.write(p3);
 			outputStream.write(p4);
 			outputStream.write(p5);
+			outputStream.write(p6);
 
 			byte[] byteContent = outputStream.toByteArray();
 
@@ -818,7 +851,7 @@ public class SimulatedRouter {
 						&& !key.equals(receiverIp + ":" + receiverPort)) {
 					// poison reverse
 					outputStream.write(Util.toByteArray(MAX));
-					//outputStream.write(Util.toByteArray(val.getCost()));
+					// outputStream.write(Util.toByteArray(val.getCost()));
 				} else {
 					outputStream.write(Util.toByteArray(val.getCost()));
 				}
@@ -857,17 +890,18 @@ public class SimulatedRouter {
 						neighbours.remove(i);
 					}
 				}
-				try{
+				try {
 
-				updateTableAfterNeighbourDown(ipPortPair);
-				}catch(Exception ex){
+					updateTableAfterNeighbourDown(ipPortPair);
+				} catch (Exception ex) {
 					ex.printStackTrace();
 				}
 			}
 		}
 	}
 
-	private void updateTableAfterNeighbourDown(String downNeighbourIpPort) throws Exception{
+	private void updateTableAfterNeighbourDown(String downNeighbourIpPort)
+			throws Exception {
 		/*
 		 * For all destination using this neighbour as the next hop, change the
 		 * cost to Infinity because this neighbour is down
