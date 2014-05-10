@@ -1,7 +1,7 @@
 
 public enum Commands {
 	
-	LINKDOWN,LINKUP,SHOWRT,CLOSE,TRANSFER, UNKNOWN;
+	LINKDOWN,LINKUP,SHOWRT,CLOSE,TRANSFER, UNKNOWN, TRANS_PLUS;
 	
 	public static Commands getCommand(String str){
 		try{
