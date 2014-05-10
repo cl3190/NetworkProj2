@@ -10,9 +10,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Map.Entry;
 
-
-
-
 public class SimulatedRouter {
 
 	private int PORT;
@@ -66,7 +63,8 @@ public class SimulatedRouter {
 		this.CHUCKNUM = chuckNum;
 
 		String ip = InetAddress.getLocalHost().getHostAddress();
-		if(ip.substring(0, 3).equals("127"))  //some time local address is 127.0.1.1
+		if (ip.substring(0, 3).equals("127")) // some time local address is
+												// 127.0.1.1
 			ip = "127.0.0.1";
 		this.THIS_IP = ip;
 
@@ -350,11 +348,11 @@ public class SimulatedRouter {
 		int padding = 21 - ipPortPair.length();
 		for (int i = 0; i < padding; i++)
 			ipPortPair += " ";
-		
-		String sendIpPort = THIS_IP+":"+PORT;
+
+		String sendIpPort = THIS_IP + ":" + PORT;
 		padding = 21 - sendIpPort.length();
 		for (int i = 0; i < padding; i++)
-			sendIpPort  += " ";
+			sendIpPort += " ";
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		outputStream.write(com.getBytes());
@@ -365,13 +363,14 @@ public class SimulatedRouter {
 		outputStream.write(ipPortPair.getBytes());
 		outputStream.write(sendIpPort.getBytes());
 		outputStream.write(fileContent);
-		
-		//System.out.println(new String(fileContent));
+
+		// System.out.println(new String(fileContent));
 
 		byte[] byteContent = outputStream.toByteArray();
-		System.out.println("*******************************");
-		
-		System.out.println("|"+new String(Arrays.copyOfRange(byteContent, 24+21+21, 24+21+21+chuckLength))+"|");
+		// System.out.println("*******************************");
+
+		// System.out.println("|"+new String(Arrays.copyOfRange(byteContent,
+		// 24+21+21, 24+21+21+chuckLength))+"|");
 
 		dpOut.setData(byteContent);
 		ds.send(dpOut);
@@ -520,9 +519,7 @@ public class SimulatedRouter {
 			// .println("==================" + ipPortPair + "   " + cost);
 
 			cost += routeTable.get(senderIpPortPair).getCost();
-			if (cost > MAX) {
-				cost = MAX;
-			}
+			
 
 			if (routeTable.containsKey(ipPortPair)) {
 				double originCost = routeTable.get(ipPortPair).getCost();
@@ -551,34 +548,44 @@ public class SimulatedRouter {
 
 			} else {
 
-				/*
-				 * if (ipPortPair.equals(THIS_IP + ":" + PORT)) { /* This is
-				 * when receiving the entry with the destination as this client,
-				 * when this happen, we update the destination to the sender to
-				 * the cost of this entry
-				 */
-				/*
-				 * cost-=routeTable.get(senderIpPortPair).getCost();
-				 * 
-				 * 
-				 * if (routeTable.get(senderIpPortPair).getCost() > cost) {
-				 * routeTable.put(senderIpPortPair, new TableEntry( new
-				 * NetworkNode(senderIp, senderPort), new
-				 * NetworkNode(senderIpPortPair), cost)); hasUpdate = true; } }
-				 * else {
-				 */
-				/*
-				 * if the routeTable doesn't contain it, then we should add this
-				 * one to the route table
-				 */
-				if (!ipPortPair.equals(THIS_IP + ":" + PORT)) {
-					/* don't add entry to myself */
-					routeTable.put(ipPortPair, new TableEntry(new NetworkNode(
-							senderIp, senderPort), new NetworkNode(ipPortPair),
-							cost));
-					hasUpdate = true;
+				if (ipPortPair.equals(THIS_IP + ":" + PORT)) { /*
+																 * This is when
+																 * receiving the
+																 * entry with
+																 * the
+																 * destination
+																 * as this
+																 * client, when
+																 * this happen,
+																 * we update the
+																 * destination
+																 * to the sender
+																 * to the cost
+																 * of this entry
+																 */
+
+					cost -= routeTable.get(senderIpPortPair).getCost();
+
+					if (routeTable.get(senderIpPortPair).getCost() > cost) {
+						routeTable.put(senderIpPortPair, new TableEntry(
+								new NetworkNode(senderIp, senderPort),
+								new NetworkNode(senderIpPortPair), cost));
+						hasUpdate = true;
+					}
+				} else {
+
+					/*
+					 * if the routeTable doesn't contain it, then we should add
+					 * this one to the route table
+					 */
+					if (!ipPortPair.equals(THIS_IP + ":" + PORT)) {
+						/* don't add entry to myself */
+						routeTable.put(ipPortPair, new TableEntry(
+								new NetworkNode(senderIp, senderPort),
+								new NetworkNode(ipPortPair), cost));
+						hasUpdate = true;
+					}
 				}
-				// }
 			}
 		}
 
@@ -587,7 +594,7 @@ public class SimulatedRouter {
 		}
 	}
 
-	private void linkdownMessageRespond() {
+	private void linkdownMessageRespond() throws Exception{
 		String senderIp = dpIn.getAddress().getHostAddress();
 		int senderPort = dpIn.getPort();
 
@@ -635,11 +642,12 @@ public class SimulatedRouter {
 		byte[] inArr = dpIn.getData();
 		String destIpPort = new String(Arrays.copyOfRange(inArr, 24, 45));
 		destIpPort = destIpPort.trim();
-		
-		//System.out.println("=======#"+destIpPort+"#"+THIS_IP + ":" + PORT+"#");
-		
+
+		// System.out.println("=======#"+destIpPort+"#"+THIS_IP + ":" +
+		// PORT+"#");
+
 		int hopCount = Util.byteArrayToInt(Arrays.copyOfRange(inArr, 20, 24));
-		
+
 		if (destIpPort.equals(THIS_IP + ":" + PORT)) {
 			/* This client is the final destination */
 
@@ -655,26 +663,28 @@ public class SimulatedRouter {
 			receiveTime++;
 
 			receiveTable[chuckNum - 1] = true;
-			fileReceiveList.add(chuckNum - 1,
-					Arrays.copyOfRange(inArr, 24+(hopCount+1)*21, 24+(hopCount+1)*21+length));
+			fileReceiveList.add(
+					chuckNum - 1,
+					Arrays.copyOfRange(inArr, 24 + (hopCount + 1) * 21, 24
+							+ (hopCount + 1) * 21 + length));
 
-			//System.out.println("&&&&&&");
-			System.out.println(new String(Arrays.copyOfRange(inArr, 24+(hopCount+1)*21,24+length+(hopCount+1)*21)));
-			
+			// System.out.println("&&&&&&");
+			// System.out.println(new String(Arrays.copyOfRange(inArr,
+			// 24+(hopCount+1)*21,24+length+(hopCount+1)*21)));
+
 			boolean allReceived = true;
 			for (boolean test : receiveTable) {
 				if (!test)
 					allReceived = false;
 			}
-			
-			
-			
+
 			System.out.println("Chuck " + chuckNum + " has been received.");
 			System.out.println("Path:");
-			for(int i=0;i<hopCount;i++){
-				System.out.println((new String(Arrays.copyOfRange(inArr, 45+i*21, 45+21+i*21))).trim()+"  -> ");
+			for (int i = 0; i < hopCount; i++) {
+				System.out.println((new String(Arrays.copyOfRange(inArr,
+						45 + i * 21, 45 + 21 + i * 21))).trim() + "  -> ");
 			}
-			System.out.println(THIS_IP+":"+PORT);
+			System.out.println(THIS_IP + ":" + PORT);
 
 			if (allReceived) {
 				File file = new File("output");
@@ -700,28 +710,30 @@ public class SimulatedRouter {
 
 			dpOut.setAddress(InetAddress.getByName(nextHop.getIpAddress()));
 			dpOut.setPort(nextHop.getPort());
-			
-			int fileLength = Util.byteArrayToInt(Arrays.copyOfRange(inArr, 8, 12));
-			
+
+			int fileLength = Util.byteArrayToInt(Arrays.copyOfRange(inArr, 8,
+					12));
+
 			byte[] p1 = Arrays.copyOfRange(inArr, 0, 20);
-			byte[] p2 = Util.intToByteArray(hopCount+1);
-			byte[] p3 = Arrays.copyOfRange(inArr, 24, 24+(hopCount+1)*21);
-			System.out.println("p1:"+new String(p1));
-			System.out.println("p2:"+Util.byteArrayToInt(p2));
-			System.out.println("p3:"+new String(p3)+"|");
-			
-			String thisIpPort = THIS_IP+":"+PORT;
+			byte[] p2 = Util.intToByteArray(hopCount + 1);
+			byte[] p3 = Arrays.copyOfRange(inArr, 24, 24 + (hopCount + 1) * 21);
+			// System.out.println("p1:"+new String(p1));
+			// System.out.println("p2:"+Util.byteArrayToInt(p2));
+			// System.out.println("p3:"+new String(p3)+"|");
+
+			String thisIpPort = THIS_IP + ":" + PORT;
 			int padding = 21 - thisIpPort.length();
 			for (int i = 0; i < padding; i++)
-				thisIpPort  += " ";
+				thisIpPort += " ";
 
 			byte[] p4 = thisIpPort.getBytes();
-			System.out.println("p4:"+new String(p4)+"|");
-			
-			byte[] p5 = Arrays.copyOfRange(inArr, 24+(hopCount+1)*21, 24+(hopCount+1)*21+fileLength);
+			// System.out.println("p4:"+new String(p4)+"|");
 
-			System.out.println("p5:"+new String(p5)+"|");
-			
+			byte[] p5 = Arrays.copyOfRange(inArr, 24 + (hopCount + 1) * 21, 24
+					+ (hopCount + 1) * 21 + fileLength);
+
+			// System.out.println("p5:"+new String(p5)+"|");
+
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			outputStream.write(p1);
 			outputStream.write(p2);
@@ -730,8 +742,7 @@ public class SimulatedRouter {
 			outputStream.write(p5);
 
 			byte[] byteContent = outputStream.toByteArray();
-			
-			
+
 			dpOut.setData(byteContent);
 			ds.send(dpOut);
 		}
@@ -775,9 +786,9 @@ public class SimulatedRouter {
 			outputStream.write(content.toString().getBytes());
 
 			int entrySize = routeTable.size();
-			if (routeTable.containsKey(receiverIp + ":" + receiverPort)) {
-				entrySize--;
-			}
+			// if (routeTable.containsKey(receiverIp + ":" + receiverPort)) {
+			// entrySize--;
+			// }
 
 			outputStream.write(Util.intToByteArray(entrySize));
 			outputStream.write("        ".getBytes());
@@ -793,23 +804,25 @@ public class SimulatedRouter {
 
 				int paddingCount = 21 - key.length();
 
-				if (!val.getDestination().getIpPortPair()
-						.equals(receiverIp + ":" + receiverPort)) {
+				// if (!val.getDestination().getIpPortPair()
+				// .equals(receiverIp + ":" + receiverPort)) {
 
-					outputStream.write(key.getBytes());
-					for (int i = 0; i < paddingCount; i++) {
-						outputStream.write(" ".getBytes());
-					}
+				outputStream.write(key.getBytes());
+				for (int i = 0; i < paddingCount; i++) {
 					outputStream.write(" ".getBytes());
-
-					if (val.getNextHop().getIpPortPair()
-							.equals(receiverIp + ":" + receiverPort)) {
-						// poison reverse
-						outputStream.write(Util.toByteArray(MAX));
-					} else {
-						outputStream.write(Util.toByteArray(val.getCost()));
-					}
 				}
+				outputStream.write(" ".getBytes());
+
+				if (val.getNextHop().getIpPortPair()
+						.equals(receiverIp + ":" + receiverPort)
+						&& !key.equals(receiverIp + ":" + receiverPort)) {
+					// poison reverse
+					outputStream.write(Util.toByteArray(MAX));
+					//outputStream.write(Util.toByteArray(val.getCost()));
+				} else {
+					outputStream.write(Util.toByteArray(val.getCost()));
+				}
+				// }
 
 			}
 
@@ -844,13 +857,17 @@ public class SimulatedRouter {
 						neighbours.remove(i);
 					}
 				}
+				try{
 
 				updateTableAfterNeighbourDown(ipPortPair);
+				}catch(Exception ex){
+					ex.printStackTrace();
+				}
 			}
 		}
 	}
 
-	private void updateTableAfterNeighbourDown(String downNeighbourIpPort) {
+	private void updateTableAfterNeighbourDown(String downNeighbourIpPort) throws Exception{
 		/*
 		 * For all destination using this neighbour as the next hop, change the
 		 * cost to Infinity because this neighbour is down
@@ -869,6 +886,7 @@ public class SimulatedRouter {
 			}
 
 		}
+		sendTableToNeibours();
 	}
 
 }
